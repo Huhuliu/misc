@@ -1,449 +1,422 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  MessageSquare, Settings, CheckCircle2, ChevronRight, RotateCcw, 
-  Copy, Check, FileText, PenTool, Lightbulb, Layers, Terminal, AlertCircle, 
-  Search, MousePointerClick, Edit3, UserCircle2
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude 最佳工具決策器</title>
+    <!-- 引入 Tailwind CSS 進行排版與美化 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 核心庫 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 讓瀏覽器看懂 React 語法 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body>
+    <!-- React 應用程式會渲染在這裡 -->
+    <div id="root"></div>
 
-// --- 預設角色選單 ---
-const ROLE_PRESETS = [
-  "產品經理 (PM)",
-  "前端工程師",
-  "後端工程師",
-  "UI/UX 設計師",
-  "行銷企劃",
-  "自訂..."
-];
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-// --- 點擊問答邏輯 ---
-const QUIZ_TREE = {
-  start: {
-    msg: "您想讓 Claude 幫您解決哪一種類型的問題？",
-    options: [
-      { text: "我想建立一套「專屬的 SOP 或工具」，不用每次重新交代。", next: "q_sop" },
-      { text: "我想設定「專案規範或防呆機制」，避免 Claude 犯錯。", next: "q_rule" },
-      { text: "我有一大批「海量資料/長文」要處理，但不想干擾目前的對話。", next: "q_heavy" },
-      { text: "我想讓 Claude 產出結果後，自動觸發「電腦或系統上的動作」。", next: "q_system" }
-    ]
-  },
-  q_sop: {
-    msg: "關於這套 SOP 或工具，您希望它如何被觸發？",
-    options: [
-      { text: "像快捷鍵一樣，我打出特定指令（如 /審核）它才執行。", result: "skill_user" },
-      { text: "像自動雷達，它看到相關內容就會「自動」察覺並執行。", result: "skill_auto" }
-    ]
-  },
-  q_rule: {
-    msg: "這些規範是屬於哪一種層級的？",
-    options: [
-      { text: "最高指導原則！(例如品牌調性、程式碼排版風格)，每次對話都要遵守。", result: "claude_md" },
-      { text: "特定任務才需要的參考書。(例如特定的法規檢查、特定的 API 文件)。", result: "skill_auto" }
-    ]
-  },
-  q_heavy: {
-    msg: "您是否希望它在「背景」默默處理這些資料，只把最後的精華摘要交給您？",
-    options: [
-      { text: "是的，請在獨立空間處理，不要洗版我的主對話框。", result: "subagent" },
-      { text: "其實資料沒那麼多，我只是想要一個分析資料的固定指令。", result: "skill_user" }
-    ]
-  },
-  q_system: {
-    msg: "確認一下，您是需要執行「確定性的 Shell 操作」嗎？（例如自動格式化、自動存檔、發 API 通知）",
-    options: [
-      { text: "對，我需要在它動作的前/後，自動執行這些腳本。", result: "hook" },
-      { text: "不是，我只是想讓它整理一般文字資訊。", next: "start" }
-    ]
-  }
-};
+        // --- 替換為 SVG 圖示元件 (為確保單一檔案能運行，不依賴外部套件) ---
+        const IconSettings = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
+        const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg>;
+        const IconPointer = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m13.78 16.06 6.88 6.89a2 2 0 0 0 2.83-2.83l-6.89-6.88a2 2 0 0 0-2.82 2.82z"></path><path d="m21.88 2.12-19.7 10a1 1 0 0 0-.12 1.83l6.57 2.37a2 2 0 0 0 2.32-.61l6.54-6.54c.2-.2.52-.2.72 0s.2.52 0 .72l-6.54 6.54a2 2 0 0 0-.61 2.32l2.37 6.57a1 1 0 0 0 1.83-.12l10-19.7a1 1 0 0 0-1.2-1.2z"></path></svg>;
+        const IconEdit = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>;
+        const IconMessage = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path></svg>;
+        const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>;
+        const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>;
+        const IconRotate = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>;
+        const IconTerminal = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>;
+        const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
 
-// --- 結果與保母級教學資料 (支援動態角色置入) ---
-const RESULTS = {
-  claude_md: {
-    title: "CLAUDE.md (全域專案規範)",
-    icon: FileText,
-    color: "amber",
-    concept: "這是專案的「大腦前額葉」。把檔案放在專案目錄下，Claude 每次開啟新對話都會先讀它，確保風格、格式、底線不跑偏。",
-    steps: [
-      { title: "步驟 1：釐清核心規範", desc: "列出 3~5 條絕對不能違反的原則（例如：回覆語氣、程式碼風格、必須遵守的限制）。" },
-      { title: "步驟 2：請 Claude 寫設定檔", desc: "複製下方的咒語貼給 Claude，它會幫您產出符合格式的內容。" },
-      { title: "步驟 3：建立檔案", desc: "在您的專案資料夾最外層，新增一個名為 `CLAUDE.md` 的檔案，將產出的內容貼上並存檔即可生效。" }
-    ],
-    getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我需要你幫我撰寫一份 \`CLAUDE.md\` 檔案的草稿。請用 Markdown 條列式寫出 5 點身為這個角色最需要的「核心指導原則」(包含：溝通語氣、專業要求、以及常見的地雷防範)。這份檔案將作為你未來在我們這個專案中所有回覆的預設人設與規範。`
-  },
-  skill_user: {
-    title: "Skill - 使用者觸發 (快捷指令 SOP)",
-    icon: PenTool,
-    color: "emerald",
-    concept: "您的專屬快捷鍵。設定好後，只要打出 /自訂指令，就能一秒召喚您預設好的工作流程，甚至可以帶入參數。",
-    steps: [
-      { title: "步驟 1：定義指令與流程", desc: "決定一個好記的指令名稱（例如 /review, /generate），並想好它固定要執行的步驟。" },
-      { title: "步驟 2：產出工具設定檔", desc: "複製下方咒語貼給 Claude，請它將您的流程轉換成 Skill 設定檔代碼。" },
-      { title: "步驟 3：測試快捷鍵", desc: "設定完成後，在對話框輸入您設定的指令並附上內容，驗證它是否依照 SOP 產出結果。" }
-    ],
-    getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我想建立一個『手動觸發 (invocation: user)』的 Skill 工具。請幫我設計一個符合我角色日常工作需求的快捷指令 (例如用來審核文件、檢查程式碼或生成特定格式)。\n請幫我定義這個工具的：1. 指令名稱。2. 需要傳入的參數。3. 固定的處理 SOP。最後請產出這個 Skill 的完整設定檔代碼。`
-  },
-  skill_auto: {
-    title: "Skill - 自動觸發 (智慧知識庫)",
-    icon: Lightbulb,
-    color: "blue",
-    concept: "賦予 Claude「自動雷達」。只要偵測到您對話中的特定關鍵字，就會自動拿出預設的規則來處理，無需手動呼叫。",
-    steps: [
-      { title: "步驟 1：準備觸發條件與規則", desc: "明確定義「什麼情況下」要觸發？以及觸發後要用「什麼規則」來檢查或處理？" },
-      { title: "步驟 2：產出自動工具設定", desc: "複製下方咒語貼給 Claude，讓它幫您建立這個自動雷達。" },
-      { title: "步驟 3：情境測試", desc: "故意在對話框貼上一段會觸發該條件的內容，檢查 Claude 是否會自動啟動該技能。" }
-    ],
-    getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我要建立一個『自動觸發 (invocation: auto)』的 Skill。這就像是一個自動雷達，當你在對話中偵測到特定情境時就要啟動。\n請依據我的角色，幫我構思一個最實用的自動檢查機制（例如：偵測到某種格式就自動檢查錯誤、偵測到特定名詞就自動套用規範）。並幫我寫出這個 Skill 的工具設定代碼。`
-  },
-  subagent: {
-    title: "Subagent (獨立背景處理)",
-    icon: Layers,
-    color: "indigo",
-    concept: "把閱讀海量資料或掃描大量檔案的苦力活，發包給獨立的虛擬助理。它在背景處理完只會回傳精華結果，不污染主對話。",
-    steps: [
-      { title: "步驟 1：確認資料量與目標", desc: "確認任務確實需要讀取大量文件，且只需萃取重點或執行獨立任務。" },
-      { title: "步驟 2：指派子任務", desc: "上傳資料，並使用下方咒語命令 Claude 開啟 Subagent 處理。" },
-      { title: "步驟 3：接收摘要", desc: "等待背景處理完成，您將獲得乾淨無干擾的重點回報。" }
-    ],
-    getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我接下來會上傳一份非常龐大的資料/多個檔案。為了不要污染我們目前正在討論的主題脈絡，請你呼叫一個 Subagent (子代理人，可指定模型) 在背景平行處理這些資料。\n處理任務是：(請在此填寫您要它萃取或整理的具體目標)。處理完畢後，請只在這回覆我重點摘要或最終結果即可。`
-  },
-  hook: {
-    title: "Hook (自動化腳本連動)",
-    icon: Terminal,
-    color: "rose",
-    concept: "打通電腦與系統的橋樑。可以在 Claude 執行動作的「前置 (Pre)」或「後置 (Post)」自動執行 Shell 腳本（如格式化、存檔、發通知）。",
-    steps: [
-      { title: "步驟 1：確認自動化需求", desc: "釐清要在哪個時間點執行什麼電腦指令？（例如產出結果後，自動執行 git commit 或發送 API）。" },
-      { title: "步驟 2：請 Claude 撰寫腳本", desc: "利用下方咒語，請 Claude 一步步教您撰寫該腳本並完成註冊。" },
-      { title: "步驟 3：系統授權與測試", desc: "依照教學在終端機 (Terminal) 設定權限，並進行第一次連動測試。" }
-    ],
-    getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我需要設定一個 Hook (自動化動作)。我的需求是：每當你幫我完成特定任務後，自動觸發一個 shell 腳本來幫我處理後續動作 (例如：自動存檔、自動執行格式化或發送通知)。\n請用最白話、直覺的步驟，教我該怎麼寫這個腳本，以及怎麼在系統中註冊這個 Hook。`
-  }
-};
+        // 資料結構
+        const ROLE_PRESETS = [
+            "產品經理 (PM)",
+            "前端工程師",
+            "後端工程師",
+            "UI/UX 設計師",
+            "行銷企劃",
+            "自訂..."
+        ];
 
-export default function App() {
-  const [role, setRole] = useState(ROLE_PRESETS[0]);
-  const [customRole, setCustomRole] = useState("");
-  const [mode, setMode] = useState("quiz"); // 'quiz' or 'text'
-  
-  // Quiz State
-  const [chatHistory, setChatHistory] = useState([{ role: 'bot', node: 'start' }]);
-  
-  // Text Input State
-  const [textInput, setTextInput] = useState("");
-  const [textError, setTextError] = useState("");
+        const QUIZ_TREE = {
+            start: {
+                msg: "您想讓 Claude 幫您解決哪一種類型的問題？",
+                options: [
+                    { text: "我想建立一套「專屬的 SOP 或工具」，不用每次重新交代。", next: "q_sop" },
+                    { text: "我想設定「專案規範或防呆機制」，避免 Claude 犯錯。", next: "q_rule" },
+                    { text: "我有一大批「海量資料/長文」要處理，但不想干擾目前的對話。", next: "q_heavy" },
+                    { text: "我想讓 Claude 產出結果後，自動觸發「電腦或系統上的動作」。", next: "q_system" }
+                ]
+            },
+            q_sop: {
+                msg: "關於這套 SOP 或工具，您希望它如何被觸發？",
+                options: [
+                    { text: "像快捷鍵一樣，我打出特定指令（如 /審核）它才執行。", result: "skill_user" },
+                    { text: "像自動雷達，它看到相關內容就會「自動」察覺並執行。", result: "skill_auto" }
+                ]
+            },
+            q_rule: {
+                msg: "這些規範是屬於哪一種層級的？",
+                options: [
+                    { text: "最高指導原則！(例如品牌調性、程式碼排版風格)，每次對話都要遵守。", result: "claude_md" },
+                    { text: "特定任務才需要的參考書。(例如特定的法規檢查、特定的 API 文件)。", result: "skill_auto" }
+                ]
+            },
+            q_heavy: {
+                msg: "您是否希望它在「背景」默默處理這些資料，只把最後的精華摘要交給您？",
+                options: [
+                    { text: "是的，請在獨立空間處理，不要洗版我的主對話框。", result: "subagent" },
+                    { text: "其實資料沒那麼多，我只是想要一個分析資料的固定指令。", result: "skill_user" }
+                ]
+            },
+            q_system: {
+                msg: "確認一下，您是需要執行「確定性的 Shell 操作」嗎？（例如自動格式化、自動存檔、發 API 通知）",
+                options: [
+                    { text: "對，我需要在它動作的前/後，自動執行這些腳本。", result: "hook" },
+                    { text: "不是，我只是想讓它整理一般文字資訊。", next: "start" }
+                ]
+            }
+        };
 
-  const [result, setResult] = useState(null);
-  const [copied, setCopied] = useState(false);
-  
-  const endRef = useRef(null);
+        const RESULTS = {
+            claude_md: {
+                title: "CLAUDE.md (全域專案規範)",
+                icon: "📄", color: "amber",
+                concept: "這是專案的「大腦前額葉」。把檔案放在專案目錄下，Claude 每次開啟新對話都會先讀它，確保風格、格式、底線不跑偏。",
+                steps: [
+                    { title: "步驟 1：釐清核心規範", desc: "列出 3~5 條絕對不能違反的原則（例如：回覆語氣、程式碼風格、必須遵守的限制）。" },
+                    { title: "步驟 2：請 Claude 寫設定檔", desc: "複製下方的咒語貼給 Claude，它會幫您產出符合格式的內容。" },
+                    { title: "步驟 3：建立檔案", desc: "在您的專案資料夾最外層，新增一個名為 CLAUDE.md 的檔案，將產出的內容貼上並存檔即可生效。" }
+                ],
+                getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我需要你幫我撰寫一份 \`CLAUDE.md\` 檔案的草稿。請用 Markdown 條列式寫出 5 點身為這個角色最需要的「核心指導原則」(包含：溝通語氣、專業要求、以及常見的地雷防範)。這份檔案將作為你未來在我們這個專案中所有回覆的預設人設與規範。`
+            },
+            skill_user: {
+                title: "Skill - 使用者觸發 (快捷指令 SOP)",
+                icon: "⚡", color: "emerald",
+                concept: "您的專屬快捷鍵。設定好後，只要打出 /自訂指令，就能一秒召喚您預設好的工作流程，甚至可以帶入參數。",
+                steps: [
+                    { title: "步驟 1：定義指令與流程", desc: "決定一個好記的指令名稱（例如 /review, /generate），並想好它固定要執行的步驟。" },
+                    { title: "步驟 2：產出工具設定檔", desc: "複製下方咒語貼給 Claude，請它將您的流程轉換成 Skill 設定檔代碼。" },
+                    { title: "步驟 3：測試快捷鍵", desc: "設定完成後，在對話框輸入您設定的指令並附上內容，驗證它是否依照 SOP 產出結果。" }
+                ],
+                getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我想建立一個『手動觸發 (invocation: user)』的 Skill 工具。請幫我設計一個符合我角色日常工作需求的快捷指令 (例如用來審核文件、檢查程式碼或生成特定格式)。\n請幫我定義這個工具的：1. 指令名稱。2. 需要傳入的參數。3. 固定的處理 SOP。最後請產出這個 Skill 的完整設定檔代碼。`
+            },
+            skill_auto: {
+                title: "Skill - 自動觸發 (智慧知識庫)",
+                icon: "💡", color: "blue",
+                concept: "賦予 Claude「自動雷達」。只要偵測到您對話中的特定關鍵字，就會自動拿出預設的規則來處理，無需手動呼叫。",
+                steps: [
+                    { title: "步驟 1：準備觸發條件與規則", desc: "明確定義「什麼情況下」要觸發？以及觸發後要用「什麼規則」來檢查或處理？" },
+                    { title: "步驟 2：產出自動工具設定", desc: "複製下方咒語貼給 Claude，讓它幫您建立這個自動雷達。" },
+                    { title: "步驟 3：情境測試", desc: "故意在對話框貼上一段會觸發該條件的內容，檢查 Claude 是否會自動啟動該技能。" }
+                ],
+                getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我要建立一個『自動觸發 (invocation: auto)』的 Skill。這就像是一個自動雷達，當你在對話中偵測到特定情境時就要啟動。\n請依據我的角色，幫我構思一個最實用的自動檢查機制（例如：偵測到某種格式就自動檢查錯誤、偵測到特定名詞就自動套用規範）。並幫我寫出這個 Skill 的工具設定代碼。`
+            },
+            subagent: {
+                title: "Subagent (獨立背景處理)",
+                icon: "📚", color: "indigo",
+                concept: "把閱讀海量資料或掃描大量檔案的苦力活，發包給獨立的虛擬助理。它在背景處理完只會回傳精華結果，不污染主對話。",
+                steps: [
+                    { title: "步驟 1：確認資料量與目標", desc: "確認任務確實需要讀取大量文件，且只需萃取重點或執行獨立任務。" },
+                    { title: "步驟 2：指派子任務", desc: "上傳資料，並使用下方咒語命令 Claude 開啟 Subagent 處理。" },
+                    { title: "步驟 3：接收摘要", desc: "等待背景處理完成，您將獲得乾淨無干擾的重點回報。" }
+                ],
+                getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我接下來會上傳一份非常龐大的資料/多個檔案。為了不要污染我們目前正在討論的主題脈絡，請你呼叫一個 Subagent (子代理人，可指定模型) 在背景平行處理這些資料。\n處理任務是：(請在此填寫您要它萃取或整理的具體目標)。處理完畢後，請只在這回覆我重點摘要或最終結果即可。`
+            },
+            hook: {
+                title: "Hook (自動化腳本連動)",
+                icon: "⚙️", color: "rose",
+                concept: "打通電腦與系統的橋樑。可以在 Claude 執行動作的「前置 (Pre)」或「後置 (Post)」自動執行 Shell 腳本（如格式化、存檔、發通知）。",
+                steps: [
+                    { title: "步驟 1：確認自動化需求", desc: "釐清要在哪個時間點執行什麼電腦指令？（例如產出結果後，自動執行 git commit 或發送 API）。" },
+                    { title: "步驟 2：請 Claude 撰寫腳本", desc: "利用下方咒語，請 Claude 一步步教您撰寫該腳本並完成註冊。" },
+                    { title: "步驟 3：系統授權與測試", desc: "依照教學在終端機 (Terminal) 設定權限，並進行第一次連動測試。" }
+                ],
+                getPrompt: (role) => `我目前的角色/情境是：【${role}】。\n我需要設定一個 Hook (自動化動作)。我的需求是：每當你幫我完成特定任務後，自動觸發一個 shell 腳本來幫我處理後續動作 (例如：自動存檔、自動執行格式化或發送通知)。\n請用最白話、直覺的步驟，教我該怎麼寫這個腳本，以及怎麼在系統中註冊這個 Hook。`
+            }
+        };
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, result, mode]);
+        function App() {
+            const [role, setRole] = useState(ROLE_PRESETS[0]);
+            const [customRole, setCustomRole] = useState("");
+            const [mode, setMode] = useState("quiz");
+            const [chatHistory, setChatHistory] = useState([{ role: 'bot', node: 'start' }]);
+            const [textInput, setTextInput] = useState("");
+            const [textError, setTextError] = useState("");
+            const [result, setResult] = useState(null);
+            const [copied, setCopied] = useState(false);
+            const endRef = useRef(null);
 
-  // --- 處理角色變更 ---
-  const handleRoleChange = (e) => {
-    setRole(e.target.value);
-    if (e.target.value !== "自訂...") {
-      setCustomRole("");
-    }
-  };
+            useEffect(() => {
+                endRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [chatHistory, result, mode]);
 
-  const getActiveRole = () => role === "自訂..." ? (customRole || "未定義角色") : role;
+            const handleRoleChange = (e) => {
+                setRole(e.target.value);
+                if (e.target.value !== "自訂...") setCustomRole("");
+            };
 
-  // --- 文字分析邏輯 (關鍵字配對) ---
-  const analyzeText = () => {
-    if (!textInput.trim()) {
-      setTextError("請先描述您的問題！");
-      return;
-    }
-    setTextError("");
-    const t = textInput.toLowerCase();
-    
-    // 簡單關鍵字權重配對
-    if (/(大量|海量|背景|平行|洗版|摘要|幾萬字|很多資料|很多檔案|掃描所有|獨立)/.test(t)) {
-      setResult("subagent");
-    } else if (/(自動執行|系統|連動|腳本|shell|存檔|通知|hook|測試|格式化)/.test(t)) {
-      setResult("hook");
-    } else if (/(全域|人設|語氣|每次都|原則|最高指導|claude\.md|風格|不要忘記)/.test(t)) {
-      setResult("claude_md");
-    } else if (/(自動偵測|看到.*就|自動檢查|自動套用|auto|防呆)/.test(t)) {
-      setResult("skill_auto");
-    } else if (/(指令|快捷鍵|SOP|固定流程|每次都要打|user|斜線|審核標準|\/)/.test(t)) {
-      setResult("skill_user");
-    } else {
-      setTextError("描述有點模糊，無法精確判斷。建議您多加一些關鍵字（如：自動化、SOP、大量資料），或切換至「點擊問答」模式。");
-    }
-  };
+            const getActiveRole = () => role === "自訂..." ? (customRole || "未定義角色") : role;
 
-  // --- 點擊問答邏輯 ---
-  const handleOptionSelect = (option) => {
-    setChatHistory(prev => [...prev, { role: 'user', text: option.text }]);
-    setTimeout(() => {
-      if (option.result) {
-        setResult(option.result);
-      } else if (option.next) {
-        setChatHistory(prev => [...prev, { role: 'bot', node: option.next }]);
-      }
-    }, 400);
-  };
+            const analyzeText = () => {
+                if (!textInput.trim()) {
+                    setTextError("請先描述您的問題！");
+                    return;
+                }
+                setTextError("");
+                const t = textInput.toLowerCase();
+                if (/(大量|海量|背景|平行|洗版|摘要|幾萬字|很多資料|很多檔案|掃描所有|獨立)/.test(t)) {
+                    setResult("subagent");
+                } else if (/(自動執行|系統|連動|腳本|shell|存檔|通知|hook|測試|格式化)/.test(t)) {
+                    setResult("hook");
+                } else if (/(全域|人設|語氣|每次都|原則|最高指導|claude\.md|風格|不要忘記)/.test(t)) {
+                    setResult("claude_md");
+                } else if (/(自動偵測|看到.*就|自動檢查|自動套用|auto|防呆)/.test(t)) {
+                    setResult("skill_auto");
+                } else if (/(指令|快捷鍵|SOP|固定流程|每次都要打|user|斜線|審核標準|\/)/.test(t)) {
+                    setResult("skill_user");
+                } else {
+                    setTextError("描述有點模糊。建議多加一些關鍵字（如：自動化、SOP、大量資料），或切換至「點擊問答」。");
+                }
+            };
 
-  const reset = () => {
-    setChatHistory([{ role: 'bot', node: 'start' }]);
-    setTextInput("");
-    setTextError("");
-    setResult(null);
-    setCopied(false);
-  };
+            const handleOptionSelect = (option) => {
+                setChatHistory(prev => [...prev, { role: 'user', text: option.text }]);
+                setTimeout(() => {
+                    if (option.result) setResult(option.result);
+                    else if (option.next) setChatHistory(prev => [...prev, { role: 'bot', node: option.next }]);
+                }, 400);
+            };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
+            const reset = () => {
+                setChatHistory([{ role: 'bot', node: 'start' }]);
+                setTextInput(""); setTextError(""); setResult(null); setCopied(false);
+            };
 
-  const getColorClasses = (colorName) => {
-    const map = {
-      amber: "bg-amber-50 border-amber-200 text-amber-900",
-      emerald: "bg-emerald-50 border-emerald-200 text-emerald-900",
-      blue: "bg-blue-50 border-blue-200 text-blue-900",
-      indigo: "bg-indigo-50 border-indigo-200 text-indigo-900",
-      rose: "bg-rose-50 border-rose-200 text-rose-900"
-    };
-    return map[colorName] || map.blue;
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4 md:p-6 font-sans text-gray-800">
-      <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col max-h-[95vh]">
-        
-        {/* --- Header 區塊 --- */}
-        <div className="bg-white border-b border-gray-200 p-5 shrink-0 relative overflow-hidden rounded-t-2xl">
-          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 relative z-10">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-                <Settings className="w-6 h-6 mr-2 text-indigo-600" />
-                Claude 最佳工具決策器
-              </h1>
-              <p className="text-gray-500 text-sm mt-1">依照您的角色與痛點，精準推薦最適合的自動化工具</p>
-            </div>
-            
-            {/* 角色設定區 */}
-            <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 flex items-center gap-2 max-w-xs">
-              <UserCircle2 className="w-5 h-5 text-gray-500 shrink-0" />
-              <div className="flex flex-col w-full">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">您的當前角色</span>
-                {role === "自訂..." ? (
-                  <input 
-                    type="text" 
-                    value={customRole}
-                    onChange={(e) => setCustomRole(e.target.value)}
-                    placeholder="請輸入您的角色或情境..."
-                    className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500"
-                    autoFocus
-                  />
-                ) : (
-                  <select 
-                    value={role} 
-                    onChange={handleRoleChange}
-                    className="w-full bg-transparent text-sm font-medium text-gray-700 focus:outline-none appearance-none cursor-pointer"
-                  >
-                    {ROLE_PRESETS.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* --- 模式切換區 --- */}
-        {!result && (
-          <div className="flex border-b border-gray-100 bg-gray-50 shrink-0">
-            <button 
-              onClick={() => { setMode('quiz'); setTextError(""); }}
-              className={`flex-1 py-3 text-sm font-bold flex items-center justify-center transition-colors ${mode === 'quiz' ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <MousePointerClick className="w-4 h-4 mr-2" /> 點擊問答 (引導模式)
-            </button>
-            <button 
-              onClick={() => setMode('text')}
-              className={`flex-1 py-3 text-sm font-bold flex items-center justify-center transition-colors ${mode === 'text' ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Edit3 className="w-4 h-4 mr-2" /> 打字描述 (AI 診斷)
-            </button>
-          </div>
-        )}
-
-        {/* --- 主要內容區 --- */}
-        <div className="flex-1 overflow-y-auto p-5 md:p-8 relative scroll-smooth">
-          
-          {!result ? (
-            <>
-              {/* 模式 A：點擊問答 */}
-              {mode === 'quiz' && (
-                <div className="space-y-6 max-w-2xl mx-auto">
-                  {chatHistory.map((chat, index) => {
-                    if (chat.role === 'bot') {
-                      const nodeData = QUIZ_TREE[chat.node];
-                      const isLast = index === chatHistory.length - 1;
-                      
-                      return (
-                        <div key={index} className="flex flex-col items-start animate-in fade-in slide-in-from-bottom-2">
-                          <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-5 py-4 text-gray-700 shadow-sm text-[15px] leading-relaxed mb-3">
-                            {nodeData.msg}
-                          </div>
-                          
-                          {isLast && (
-                            <div className="space-y-2 w-full mt-1">
-                              {nodeData.options.map((opt, i) => (
-                                <button
-                                  key={i}
-                                  onClick={() => handleOptionSelect(opt)}
-                                  className="w-full text-left bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/30 p-4 rounded-xl transition-all group flex items-center text-[15px] text-gray-700"
-                                >
-                                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-3 shrink-0 group-hover:bg-indigo-100 transition-colors">
-                                    <span className="text-gray-500 group-hover:text-indigo-600 font-bold text-xs">{String.fromCharCode(65 + i)}</span>
-                                  </div>
-                                  <span>{opt.text}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div key={index} className="flex justify-end animate-in fade-in slide-in-from-bottom-2">
-                          <div className="bg-gray-800 text-white rounded-2xl rounded-br-sm px-5 py-3 shadow-sm text-[15px]">
-                            {chat.text}
-                          </div>
-                        </div>
-                      );
+            const copyToClipboard = (text) => {
+                // 為了兼容部分瀏覽器安全限制，使用傳統 fallback
+                if(navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+                } else {
+                    let textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-999999px";
+                    textArea.style.top = "-999999px";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        setCopied(true); setTimeout(() => setCopied(false), 2000);
+                    } catch (err) {
+                        alert("複製失敗，請手動框選複製！");
                     }
-                  })}
-                </div>
-              )}
+                    textArea.remove();
+                }
+            };
 
-              {/* 模式 B：打字描述 */}
-              {mode === 'text' && (
-                <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95">
-                  <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    <label className="block text-gray-700 font-bold mb-2 flex items-center">
-                      <MessageSquare className="w-5 h-5 mr-2 text-indigo-500" />
-                      請用白話文描述您想解決的問題：
-                    </label>
-                    <p className="text-sm text-gray-500 mb-4">例如：「我想要每次寫完程式碼後，自動幫我跑測試」、「我想要設定一個全域的品牌語氣規範」。</p>
-                    <textarea
-                      value={textInput}
-                      onChange={(e) => setTextInput(e.target.value)}
-                      className="w-full h-32 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none mb-4 text-[15px] leading-relaxed"
-                      placeholder="請在此輸入您的痛點或需求..."
-                    />
-                    {textError && (
-                      <div className="flex items-start text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4 border border-amber-200">
-                        <AlertCircle className="w-4 h-4 mr-2 shrink-0 mt-0.5" />
-                        <p>{textError}</p>
-                      </div>
-                    )}
-                    <button
-                      onClick={analyzeText}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center"
-                    >
-                      <Search className="w-5 h-5 mr-2" /> 開始 AI 診斷
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            /* --- 診斷結果區 --- */
-            <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex justify-between items-center mb-6">
-                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold flex items-center">
-                  <CheckCircle2 className="w-4 h-4 mr-1.5" /> 診斷完成
-                </div>
-                <button 
-                  onClick={reset}
-                  className="flex items-center text-sm text-gray-500 hover:text-gray-800 bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4 mr-1.5" /> 重新測驗
-                </button>
-              </div>
+            const getColorClasses = (colorName) => {
+                const map = {
+                    amber: "bg-amber-50 border-amber-200 text-amber-900",
+                    emerald: "bg-emerald-50 border-emerald-200 text-emerald-900",
+                    blue: "bg-blue-50 border-blue-200 text-blue-900",
+                    indigo: "bg-indigo-50 border-indigo-200 text-indigo-900",
+                    rose: "bg-rose-50 border-rose-200 text-rose-900"
+                };
+                return map[colorName] || map.blue;
+            };
 
-              <div className={`rounded-2xl border-2 shadow-sm ${getColorClasses(RESULTS[result].color)} overflow-hidden`}>
-                
-                <div className="px-6 py-5 border-b border-black/5 bg-white/50 flex flex-col md:flex-row md:items-center gap-4">
-                  <div className="flex items-center flex-1">
-                    {React.createElement(RESULTS[result].icon, { className: "w-8 h-8 mr-3 opacity-80" })}
-                    <h3 className="font-bold text-2xl">{RESULTS[result].title}</h3>
-                  </div>
-                </div>
-                
-                <div className="p-6 md:p-8 space-y-8">
-                  {/* 概念說明 */}
-                  <div className="bg-white/70 rounded-xl p-5 border border-black/5">
-                    <p className="font-medium leading-relaxed opacity-90 text-[15px]">
-                      💡 <strong>這是什麼：</strong>{RESULTS[result].concept}
-                    </p>
-                  </div>
-
-                  {/* 清晰直覺的下一步 */}
-                  <div>
-                    <h4 className="text-lg font-bold flex items-center mb-4 opacity-80 text-gray-800">
-                      🎯 直覺實作三部曲
-                    </h4>
-                    <div className="space-y-3">
-                      {RESULTS[result].steps.map((step, idx) => (
-                        <div key={idx} className="flex items-start bg-white rounded-xl p-4 border border-black/5 shadow-sm">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-white text-xs mr-3 shrink-0 mt-0.5 ${idx === 1 ? 'bg-indigo-500' : 'bg-gray-300'}`}>
-                            {idx + 1}
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-gray-800 mb-1 text-sm">{step.title}</h5>
-                            <p className="text-sm text-gray-600 leading-relaxed">{step.desc}</p>
-                          </div>
+            return (
+                <div className="min-h-screen flex justify-center items-center p-4 md:p-6 text-gray-800">
+                    <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col max-h-[95vh] overflow-hidden">
+                        
+                        {/* Header */}
+                        <div className="bg-white border-b border-gray-200 p-5 shrink-0">
+                            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-800 flex items-center">
+                                        <div className="text-indigo-600 mr-2"><IconSettings /></div>
+                                        Claude 最佳工具決策器
+                                    </h1>
+                                    <p className="text-gray-500 text-sm mt-1">依照您的角色與痛點，精準推薦最適合的自動化工具</p>
+                                </div>
+                                <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 flex items-center gap-2 max-w-xs">
+                                    <div className="text-gray-500"><IconUser /></div>
+                                    <div className="flex flex-col w-full">
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">您的當前角色</span>
+                                        {role === "自訂..." ? (
+                                            <input 
+                                                type="text" value={customRole} onChange={(e) => setCustomRole(e.target.value)}
+                                                placeholder="請輸入..." className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500" autoFocus
+                                            />
+                                        ) : (
+                                            <select value={role} onChange={handleRoleChange} className="w-full bg-transparent text-sm font-medium text-gray-700 focus:outline-none cursor-pointer">
+                                                {ROLE_PRESETS.map(r => <option key={r} value={r}>{r}</option>)}
+                                            </select>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* 動態專屬咒語區 */}
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center">
-                      <Terminal className="w-4 h-4 mr-2" /> 步驟 2 專用：複製貼上給 Claude
-                    </h4>
-                    <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg border border-gray-800">
-                      <div className="px-4 py-3 bg-gray-800 flex justify-between items-center border-b border-gray-700">
-                        <span className="text-xs text-gray-400 font-mono">
-                          角色狀態: {getActiveRole()}
-                        </span>
-                        <button 
-                          onClick={() => copyToClipboard(RESULTS[result].getPrompt(getActiveRole()))}
-                          className="text-gray-200 hover:text-white transition-colors flex items-center text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded"
-                        >
-                          {copied ? <><Check className="w-3.5 h-3.5 mr-1.5 text-green-400" /> 已複製</> : <><Copy className="w-3.5 h-3.5 mr-1.5" /> 複製咒語</>}
-                        </button>
-                      </div>
-                      <div className="p-5">
-                        <p className="text-gray-300 text-[15px] leading-relaxed font-mono whitespace-pre-wrap">
-                          {RESULTS[result].getPrompt(getActiveRole())}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center text-xs text-gray-500">
-                      <AlertCircle className="w-4 h-4 mr-1.5 text-indigo-400" />
-                      此咒語已根據您選擇的【{getActiveRole()}】角色自動優化，您可以在貼上後自行補充細節。
-                    </div>
-                  </div>
+                        {/* Tabs */}
+                        {!result && (
+                            <div className="flex border-b border-gray-100 bg-gray-50 shrink-0">
+                                <button onClick={() => { setMode('quiz'); setTextError(""); }} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center transition-colors ${mode === 'quiz' ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                                    <div className="mr-2"><IconPointer /></div> 點擊問答 (引導模式)
+                                </button>
+                                <button onClick={() => setMode('text')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center transition-colors ${mode === 'text' ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                                    <div className="mr-2"><IconEdit /></div> 打字描述 (AI 診斷)
+                                </button>
+                            </div>
+                        )}
 
+                        {/* Content Body */}
+                        <div className="flex-1 overflow-y-auto p-5 md:p-8 relative scroll-smooth bg-gray-50">
+                            {!result ? (
+                                <>
+                                    {mode === 'quiz' && (
+                                        <div className="space-y-6 max-w-2xl mx-auto pb-8">
+                                            {chatHistory.map((chat, index) => {
+                                                if (chat.role === 'bot') {
+                                                    const nodeData = QUIZ_TREE[chat.node];
+                                                    const isLast = index === chatHistory.length - 1;
+                                                    return (
+                                                        <div key={index} className="flex flex-col items-start animate-in fade-in">
+                                                            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-5 py-4 text-gray-700 shadow-sm text-[15px] leading-relaxed mb-3">
+                                                                {nodeData.msg}
+                                                            </div>
+                                                            {isLast && (
+                                                                <div className="space-y-2 w-full mt-1">
+                                                                    {nodeData.options.map((opt, i) => (
+                                                                        <button key={i} onClick={() => handleOptionSelect(opt)} className="w-full text-left bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/30 p-4 rounded-xl transition-all flex items-center text-[15px] text-gray-700">
+                                                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-3 shrink-0 text-gray-500 text-xs font-bold">{String.fromCharCode(65 + i)}</div>
+                                                                            <span>{opt.text}</span>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <div key={index} className="flex justify-end animate-in fade-in">
+                                                            <div className="bg-gray-800 text-white rounded-2xl rounded-br-sm px-5 py-3 shadow-sm text-[15px]">{chat.text}</div>
+                                                        </div>
+                                                    );
+                                                }
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {mode === 'text' && (
+                                        <div className="max-w-2xl mx-auto animate-in fade-in">
+                                            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                                                <label className="block text-gray-700 font-bold mb-2 flex items-center">
+                                                    <div className="text-indigo-500 mr-2"><IconMessage /></div>
+                                                    請用白話文描述您想解決的問題：
+                                                </label>
+                                                <p className="text-sm text-gray-500 mb-4">例如：「我想要每次寫完程式碼後，自動幫我跑測試」、「我想要設定一個全域的品牌語氣規範」。</p>
+                                                <textarea
+                                                    value={textInput} onChange={(e) => setTextInput(e.target.value)}
+                                                    className="w-full h-32 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none mb-4 text-[15px]"
+                                                    placeholder="請在此輸入您的痛點或需求..."
+                                                />
+                                                {textError && (
+                                                    <div className="flex items-start text-sm text-amber-600 bg-amber-50 p-3 rounded-lg mb-4 border border-amber-200">
+                                                        <div className="mr-2 mt-0.5"><IconAlert /></div>
+                                                        <p>{textError}</p>
+                                                    </div>
+                                                )}
+                                                <button onClick={analyzeText} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center">
+                                                    <div className="mr-2"><IconSearch /></div> 開始 AI 診斷
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="max-w-3xl mx-auto animate-in fade-in">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold flex items-center">
+                                            <div className="mr-1.5"><IconCheck /></div> 診斷完成
+                                        </div>
+                                        <button onClick={reset} className="flex items-center text-sm text-gray-500 hover:text-gray-800 bg-gray-200 px-3 py-1.5 rounded-lg transition-colors">
+                                            <div className="mr-1.5"><IconRotate /></div> 重新測驗
+                                        </button>
+                                    </div>
+
+                                    <div className={`rounded-2xl border-2 shadow-sm ${getColorClasses(RESULTS[result].color)} overflow-hidden`}>
+                                        <div className="px-6 py-5 border-b border-black/5 bg-white/50 flex items-center">
+                                            <span className="text-3xl mr-3">{RESULTS[result].icon}</span>
+                                            <h3 className="font-bold text-2xl">{RESULTS[result].title}</h3>
+                                        </div>
+                                        
+                                        <div className="p-6 md:p-8 space-y-8 bg-white/30">
+                                            <div className="bg-white/70 rounded-xl p-5 border border-black/5">
+                                                <p className="font-medium leading-relaxed opacity-90 text-[15px]">
+                                                    💡 <strong>這是什麼：</strong>{RESULTS[result].concept}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-lg font-bold flex items-center mb-4 text-gray-800">🎯 直覺實作三部曲</h4>
+                                                <div className="space-y-3">
+                                                    {RESULTS[result].steps.map((step, idx) => (
+                                                        <div key={idx} className="flex items-start bg-white rounded-xl p-4 border border-black/5 shadow-sm">
+                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-white text-xs mr-3 shrink-0 mt-0.5 ${idx === 1 ? 'bg-indigo-500' : 'bg-gray-400'}`}>
+                                                                {idx + 1}
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="font-bold text-gray-800 mb-1 text-sm">{step.title}</h5>
+                                                                <p className="text-sm text-gray-600 leading-relaxed">{step.desc}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center">
+                                                    <div className="mr-2"><IconTerminal /></div> 步驟 2 專用：複製貼上給 Claude
+                                                </h4>
+                                                <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg border border-gray-800">
+                                                    <div className="px-4 py-3 bg-gray-800 flex justify-between items-center border-b border-gray-700">
+                                                        <span className="text-xs text-gray-400 font-mono">角色狀態: {getActiveRole()}</span>
+                                                        <button onClick={() => copyToClipboard(RESULTS[result].getPrompt(getActiveRole()))} className="text-gray-200 hover:text-white transition-colors flex items-center text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded">
+                                                            {copied ? <div className="flex items-center text-green-400"><div className="mr-1"><IconCheck /></div>已複製</div> : <div className="flex items-center"><div className="mr-1"><IconCopy /></div>複製咒語</div>}
+                                                        </button>
+                                                    </div>
+                                                    <div className="p-5">
+                                                        <p className="text-gray-300 text-[15px] leading-relaxed font-mono whitespace-pre-wrap">{RESULTS[result].getPrompt(getActiveRole())}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 flex items-center text-xs text-gray-500">
+                                                    <div className="mr-1.5 text-indigo-500"><IconAlert /></div>
+                                                    此咒語已根據您選擇的【{getActiveRole()}】自動優化，請直接貼給 Claude 執行。
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={endRef} />
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-          )}
-          <div ref={endRef} />
-        </div>
-      </div>
-    </div>
-  );
-}
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
