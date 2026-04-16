@@ -197,20 +197,85 @@
                 </ul>
             </div>
 
-            <!-- 旅遊小叮嚀 -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-50">
-                <h2 class="text-lg font-black mb-5 flex items-center gap-2 text-emerald-800">
-                    <span class="bg-emerald-100 p-1.5 rounded-lg text-emerald-600"><i data-lucide="luggage" class="w-4 h-4"></i></span>
-                    旅遊小叮嚀
-                </h2>
-                <ul class="space-y-3 text-sm text-gray-600 font-medium">
-                    <li class="flex gap-2 items-start"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i> <span><strong>行李：</strong>託運 23kg + 手提 7kg。行動電源必放隨身。</span></li>
-                    <li class="flex gap-2 items-start"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i> <span><strong>氣候：</strong>約 27 度，夏季服飾為主，備薄外套與雨具。</span></li>
-                    <li class="flex gap-2 items-start"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i> <span><strong>電壓：</strong>220V（兩腳圓/扁型），建議自備轉接頭。</span></li>
-                    <li class="flex gap-2 items-start"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i> <span><strong>貨幣：</strong>1 台幣約等於 650~700 越南盾。</span></li>
-                    <li class="flex gap-2 items-start"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i> <span><strong>時差：</strong>越南比台灣慢 1 小時。</span></li>
-                </ul>
+        <!-- Tips / Important Info (Expanded) -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-50 mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-gray-800 border-b pb-3">
+                <i data-lucide="info" class="text-teal-500 w-6 h-6"></i> 旅遊與安全須知
+            </h2>
+            
+            <div class="space-y-6">
+                
+                <!-- 行李與機上 -->
+                <div>
+                    <h3 class="font-bold text-teal-700 text-lg mb-2 relative pl-3 before:content-[''] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:bg-teal-500 before:rounded-full">行李與機上規定</h3>
+                    <ul class="list-disc list-outside ml-5 text-sm text-gray-600 space-y-1.5 leading-relaxed">
+                        <li><strong>託運與手提：</strong>星宇航空經濟艙託運行李每人 1 件 (限重 23 公斤)，手提行李 1 件 (限重 7 公斤)。</li>
+                        <li><strong>嚴禁託運：</strong>行動電源、備用鋰電池、打火機 (限隨身攜帶1個)，請務必放在「手提行李」中隨身攜帶。</li>
+                        <li><strong>液體限制：</strong>隨身攜帶之液體、膠狀及噴霧類物品，單支容量不可超過 100 毫升，且需裝入透明夾鏈袋內。</li>
+                        <li><strong>機上安全：</strong>搭乘飛機時，請隨時扣緊安全帶，以免遇到亂流影響自身安全。</li>
+                    </ul>
+                </div>
+
+                <!-- 小費建議 -->
+                <div>
+                    <h3 class="font-bold text-teal-700 text-lg mb-2 relative pl-3 before:content-[''] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:bg-teal-500 before:rounded-full">當地小費建議</h3>
+                    <p class="text-sm text-gray-500 mb-2">越南為小費國家，適度給予小費是當地國際禮儀。</p>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm text-gray-700 space-y-2">
+                        <div class="flex justify-between border-b border-gray-200 pb-2">
+                            <span>🛏️ 飯店床頭小費</span>
+                            <span class="font-medium text-teal-600">每間房每晚 20,000 越盾 或 1 美金</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-200 pb-2 pt-1">
+                            <span>🧳 飯店行李小費 (進出房)</span>
+                            <span class="font-medium text-teal-600">每件 10,000 越盾</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-200 pb-2 pt-1">
+                            <span>🛶 迦南島桶船 (竹籃船)</span>
+                            <span class="font-medium text-teal-600">每人 20,000 越盾 或 1 美金</span>
+                        </div>
+                        <div class="flex justify-between pt-1">
+                            <span>💆 越式洗頭 / 按摩</span>
+                            <span class="font-medium text-teal-600">依時長約 80,000~140,000 越盾</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 氣候、電壓與通訊 -->
+                <div>
+                    <h3 class="font-bold text-teal-700 text-lg mb-2 relative pl-3 before:content-[''] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:bg-teal-500 before:rounded-full">實用生活資訊</h3>
+                    <ul class="list-disc list-outside ml-5 text-sm text-gray-600 space-y-1.5 leading-relaxed">
+                        <li><strong>時差：</strong>越南時間比台灣「慢 1 小時」(GMT+7)。</li>
+                        <li><strong>氣候與穿著：</strong>四月份中越平均氣溫約 24~31 度，氣候炎熱。以夏季輕便服裝為主，但室內及車內冷氣較強，<strong>強烈建議攜帶薄外套</strong>。請備妥防曬乳、太陽眼鏡、遮陽帽及雨具。</li>
+                        <li><strong>電壓與插座：</strong>當地電壓為 220V，插座多為雙孔圓型或扁型。建議自備「萬用轉接頭」。</li>
+                        <li><strong>貨幣：</strong>單位為越南盾 (VND)。建議攜帶美金至當地兌換，或提前在台灣換好小額越盾。(匯率約 1 TWD = 700~750 VND，依實際匯率為準)。</li>
+                        <li><strong>國際電話：</strong><br/>
+                            越南打回台灣：00 + 886 + 區域號碼(去0) + 電話號碼<br/>
+                            台灣打到越南：002 + 84 + 區域號碼(去0) + 電話號碼
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 安全須知 -->
+                <div>
+                    <h3 class="font-bold text-teal-700 text-lg mb-2 relative pl-3 before:content-[''] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:bg-teal-500 before:rounded-full">旅遊安全告知</h3>
+                    <ul class="list-disc list-outside ml-5 text-sm text-gray-600 space-y-1.5 leading-relaxed">
+                        <li><strong>財物保管：</strong>貴重物品請置於飯店保險箱，如隨身攜帶，切勿離手，小心扒手就在身旁。外出注意自身財物與護照安全。</li>
+                        <li><strong>飲食衛生：</strong>請勿生飲自來水及路邊攤生水、冰塊，建議飲用瓶裝礦泉水。</li>
+                        <li><strong>水上與飯店安全：</strong>
+                            <ul class="list-[circle] list-inside ml-2 mt-1 space-y-1">
+                                <li>游泳池未開放時間請勿擅自入池，並切記勿單獨入池。</li>
+                                <li>搭乘船隻(含桶船)務必全程穿著救生衣，搭乘快艇請扶緊坐穩勿移動。</li>
+                                <li>海邊戲水請勿超過安全警戒線。</li>
+                                <li>住宿飯店請隨時加扣安全鎖，勿將衣物披在燈上或在床上抽煙。</li>
+                            </ul>
+                        </li>
+                        <li><strong>團體紀律：</strong>搭乘纜車請依序上下；團體活動時如需單獨離隊，請務必徵詢領隊同意；夜間自由活動外出請告知領隊或室友，並結伴同行。</li>
+                    </ul>
+                </div>
+
             </div>
+        </div>
+
         </section>
 
     </main>
